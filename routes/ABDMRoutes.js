@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { fetchAccessToken, sendOtp, verifyOtp, getProfile } = require("../controllers/authController");
+const { fetchAccessToken, sendOtp, verifyOtp, getProfile } = require("../controllers/ABDMController");
 
 // Access Token Route
 router.get("/access-token", async (req, res) => {
