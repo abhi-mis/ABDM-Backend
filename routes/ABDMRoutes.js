@@ -1,10 +1,26 @@
 const express = require("express");
 const router = express.Router();
-const ABDMController = require("../controllers/ABDMController");
+const { fetchAccessToken, sendOtp, verifyOtp, getProfile } = require("../controllers/authController");
 
-router.get("/access-token", ABDMController.fetchAccessToken); 
-router.post("/send-otp", ABDMController.sendOtp);
-router.post("/verify-otp", ABDMController.verifyOtp);
-router.post("/profile", ABDMController.getProfile);
+// Access Token Route
+router.get("/access-token", async (req, res) => {
+    try {
+        const accessToken = await fetchAccessToken();
+        res.json({ access_token: accessToken });
+    } catch (error) {
+        console.error("Access token error:", error);
+        res.status(500).json({ 
+            message: "Failed to fetch access token",
+            error: error.message 
+        });
+    }
+});
+
+// OTP Routes
+router.post("/send-otp", sendOtp);
+router.post("/verify-otp", verifyOtp);
+
+// Profile Route
+router.post("/profile", getProfile);
 
 module.exports = router;
