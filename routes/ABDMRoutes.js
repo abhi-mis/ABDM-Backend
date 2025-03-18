@@ -21,6 +21,6 @@ router.post("/send-otp", abdmController.sendOtp);
 router.post("/verify-otp", abdmController.verifyOtp);
 
 // Profile Route
-router.post("/profile", abdmController,Controller.getProfile);
+router.post("/profile", abdmController.getProfile);
 
 module.exports = router;
