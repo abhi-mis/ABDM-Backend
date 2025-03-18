@@ -47,7 +47,10 @@ const sendOtp = async (req, res) => {
         }
 
         const accessToken = await fetchAccessToken(); // Fetch the access token dynamically
-
+        
+        // Fetch health ID certificate using the access token
+        const publicKey = await fetchHealthIdCert(accessToken);
+        
         const url = 'https://abhasbx.abdm.gov.in/abha/api/v3/enrollment/request/otp';
         const requestId = uuidv4();
         const timestamp = new Date().toISOString();
@@ -59,7 +62,6 @@ const sendOtp = async (req, res) => {
             'Authorization': `Bearer ${accessToken}`
         };
 
-        const publicKey = await fetchHealthIdCert(accessToken);
         const loginId = encryptData(aadhar, publicKey);
 
         const data = {
@@ -90,6 +92,9 @@ const verifyOtp = async (req, res) => {
         }
 
         const accessToken = await fetchAccessToken(); // Fetch the access token dynamically
+        
+        // Fetch health ID certificate using the access token
+        const publicKey = await fetchHealthIdCert(accessToken);
 
         const url = 'https://abhasbx.abdm.gov.in/abha/api/v3/enrollment/enrol/byAadhaar';
 
@@ -100,7 +105,6 @@ const verifyOtp = async (req, res) => {
             'Authorization': `Bearer ${accessToken}`
         };
 
-        const publicKey = await fetchHealthIdCert();
         const otp_value = encryptData(otp, publicKey);
 
         const data = {
