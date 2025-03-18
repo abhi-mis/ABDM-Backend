@@ -169,6 +169,7 @@ const getProfile = async (req, res) => {
 };
 
 module.exports = {
+    fetchAccessToken,
     sendOtp,
     verifyOtp,
     getProfile
