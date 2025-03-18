@@ -5,12 +5,10 @@ const fetchHealthIdCert = require("../utils/encryptionKey");
 const encryptData = require("../utils/encryptData");
 const { v4: uuidv4 } = require('uuid');
 
-const fetchAccessToken = async (req, res) => {
-
+const fetchAccessToken = async () => {
     try {
-
-        console.log('accessToken'); 
-
+        console.log('Fetching access token...');
+        
         const clientId = process.env.NEXT_PUBLIC_CLIENT_ID;
         const clientSecret = process.env.NEXT_PUBLIC_CLIENT_SECRET;
 
@@ -24,30 +22,31 @@ const fetchAccessToken = async (req, res) => {
             {
                 headers: {
                     'Content-Type': 'application/json',
-                    'REQUEST-ID': '9914d941-a354-4ed4-b23c-0b9a9a02334a',
+                    'REQUEST-ID': uuidv4(),
                     'TIMESTAMP': new Date().toISOString(),
                     'X-CM-ID': 'sbx'
                 },
                 withCredentials: true,
             }
-        ); 
+        );
 
-        console.log(response.data);
-        res.status(200).json({ access_token: response.data.accessToken });
+        return response.data.accessToken;
     } catch (err) {
-        res.status(500).json({ message: err.message });
+        console.error("Error fetching access token:", err.message);
+        throw new Error("Failed to fetch access token");
     }
-}
+};
 
 const sendOtp = async (req, res) => {
-    
     try {
-        console.log('send otp'); 
-        const { aadhar, accessToken } = req.body;
+        console.log('Sending OTP...');
+        const { aadhar } = req.body;
 
-        if (!aadhar || !accessToken) {
-            return res.status(400).json({ message: "Please provide both aadhar and accessToken" });
+        if (!aadhar) {
+            return res.status(400).json({ message: "Please provide aadhar" });
         }
+
+        const accessToken = await fetchAccessToken(); // Fetch the access token dynamically
 
         const url = 'https://abhasbx.abdm.gov.in/abha/api/v3/enrollment/request/otp';
         const requestId = uuidv4();
@@ -60,9 +59,8 @@ const sendOtp = async (req, res) => {
             'Authorization': `Bearer ${accessToken}`
         };
 
-        const publickey = await fetchHealthIdCert();
-
-        const loginId = encryptData(aadhar, publickey);
+        const publicKey = await fetchHealthIdCert(accessToken);
+        const loginId = encryptData(aadhar, publicKey);
 
         const data = {
             "txnId": "",
@@ -72,38 +70,38 @@ const sendOtp = async (req, res) => {
             "otpSystem": "aadhaar"
         };
 
-        console.log(data); 
+        console.log("OTP request data:", data);
+
         const response = await axios.post(url, data, { headers });
-        
         res.status(200).json(response.data);
     } catch (err) {
+        console.error("Error sending OTP:", err.message);
         res.status(500).json({ message: err.message });
     }
-}
+};
 
 const verifyOtp = async (req, res) => {
-
     try {
-        console.log('verify status'); 
+        console.log('Verifying OTP...');
+        const { txnId, otp, mobile } = req.body;
 
-        const { txnId, otp, mobile, accessToken } = req.body;
-
-        if (!txnId || !otp || !mobile || !accessToken) {
-            return res.status(400).json({ message: "Please provide all the required fields" });
+        if (!txnId || !otp || !mobile) {
+            return res.status(400).json({ message: "Please provide all required fields" });
         }
+
+        const accessToken = await fetchAccessToken(); // Fetch the access token dynamically
 
         const url = 'https://abhasbx.abdm.gov.in/abha/api/v3/enrollment/enrol/byAadhaar';
 
         const headers = {
             'Content-Type': 'application/json',
             'TIMESTAMP': new Date().toISOString(),
-            'REQUEST-ID': crypto.randomUUID(),
+            'REQUEST-ID': uuidv4(),
             'Authorization': `Bearer ${accessToken}`
         };
 
-        const publickey = await fetchHealthIdCert();
-
-        const otp_value = encryptData(otp, publickey);
+        const publicKey = await fetchHealthIdCert();
+        const otp_value = encryptData(otp, publicKey);
 
         const data = {
             authData: {
@@ -120,37 +118,40 @@ const verifyOtp = async (req, res) => {
             }
         };
 
+        console.log("OTP verification data:", data);
+
         const response = await axios.post(url, data, { headers });
-        return res.status(200).json(response.data);
+        res.status(200).json(response.data);
     } catch (err) {
+        console.error("Error verifying OTP:", err.message);
         res.status(500).json({ message: err.message });
     }
-}
+};
 
 const getProfile = async (req, res) => {
-
     try {
+        console.log('Fetching profile...');
 
-        console.log('profile'); 
+        const { X_Token } = req.body;
 
-        const { accessToken, X_Token } = req.body; 
-
-        if (!accessToken || !X_Token) {
-            return res.status(400).json({ message: "Please provide both accessToken and X_Token" });
+        if (!X_Token) {
+            return res.status(400).json({ message: "Please provide X_Token" });
         }
+
+        const accessToken = await fetchAccessToken(); // Fetch the access token dynamically
 
         const url = 'https://abhasbx.abdm.gov.in/abha/api/v3/profile/account/abha-card';
 
         const headers = {
             'X-Token': `Bearer ${X_Token}`,
-            'REQUEST-ID': crypto.randomUUID(),
+            'REQUEST-ID': uuidv4(),
             'TIMESTAMP': new Date().toISOString(),
             'Authorization': `Bearer ${accessToken}`
         };
 
         const response = await axios.get(url, {
             headers,
-            responseType: 'arraybuffer' 
+            responseType: 'arraybuffer'
         });
 
         res.setHeader('Content-Type', 'image/png');
@@ -158,14 +159,13 @@ const getProfile = async (req, res) => {
 
         res.send(response.data);
     } catch (err) {
-        res.status(500).json({ message: err.message }); 
+        console.error("Error fetching profile:", err.message);
+        res.status(500).json({ message: err.message });
     }
-}
-
+};
 
 module.exports = {
-    fetchAccessToken,
     sendOtp,
     verifyOtp,
     getProfile
-}
+};

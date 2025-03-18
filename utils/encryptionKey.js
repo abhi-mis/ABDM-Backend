@@ -1,10 +1,11 @@
 const axios = require('axios');
 
-async function fetchHealthIdCert() {
+async function fetchHealthIdCert(accessToken) {
     try {
         const response = await axios.get('https://healthidsbx.abdm.gov.in/api/v1/auth/cert', {
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${accessToken}`
             }
         });
         return response.data;
