@@ -4,27 +4,19 @@ const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
 const cookieParser = require("cookie-parser");
-const bodyParser = require("body-parser");
+const bodyParser = require('body-parser'); 
 
 const ABDMRoutes = require("./routes/ABDMRoutes");
+const VerificationRoutes = require("./routes/VerificationRoutes");
 
 const app = express();
 const port = process.env.PORT || 5000;
 
-const allowedOrigins = [
-    "http://localhost:3000", 
-    "https://localhost:3001"
-];
-
 const corsOptions = {
-    origin: (origin, callback) => {
-        if (!origin || allowedOrigins.includes(origin)) {
-            callback(null, true);
-        } else {
-            callback(new Error("Not allowed by CORS"));
-        }
-    },
     credentials: true,
+    origin: (origin, callback) => {
+        callback(null, true); // Allow all origins
+    },
     optionsSuccessStatus: 200,
 };
 
@@ -33,22 +25,16 @@ app.use(cors(corsOptions));
 app.use(bodyParser.json());
 app.use(cookieParser());
 app.use(bodyParser.urlencoded({ extended: true }));
-
-// Handle preflight requests
-app.options("*", cors(corsOptions));
+app.options('*', cors());
 
 // Routes
+
 app.get("/", (req, res) => {
     res.send("Hello World!");
 });
 
-app.use("/api", ABDMRoutes);
-
-// Error Handling Middleware
-app.use((err, req, res, next) => {
-    console.error(err.stack);
-    res.status(500).json({ message: "Something went wrong!" });
-});
+app.use('/api', ABDMRoutes); 
+app.use('/verify', VerificationRoutes);
 
 app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
